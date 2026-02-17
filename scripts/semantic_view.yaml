@@ -1,0 +1,2855 @@
+# Copyright 2026 Snowflake Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+name: AME_AD_SALES_SEMANTIC_VIEW
+description: |+
+  The semantic view provides a governed access layer that exposes harmonized subscriber, campaign, and regional performance datasets with consistent business terminology. It is the contract consumed by dashboards, Snowflake Native Apps, AI co-pilots, and partner-facing APIs to ensure all audiences reference the same definitions for key metrics such as impressions, CTR, churn probability, and LTV. By centralizing logic in this view, downstream tools adopt a single source of truth while the data engineering team can evolve physical tables without breaking analytical experiences.
+
+tables:
+  - name: AD_PERFORMANCE
+    synonyms:
+      - ad_delivery_insights
+      - ad_performance_mart
+      - campaign_delivery_summary
+      - campaign_pacing_report
+      - monthly_ad_performance
+    description: Monthly ad performance mart summarising campaign delivery metrics, targeting context and reach. Supports executive dashboards and pacing reviews.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: HARMONIZED
+      table: AD_PERFORMANCE
+    dimensions:
+      - name: CAMPAIGN_ID
+        synonyms:
+          - ad_campaign_id
+          - campaign_code
+          - campaign_identifier
+          - marketing_campaign_id
+          - promo_id
+        description: Unique identifier for a specific advertising campaign.
+        expr: CAMPAIGN_ID
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - AD_0084
+          - AD_0109
+          - AD_0004
+      - name: CONTENT_CATEGORY
+        synonyms:
+          - campaign_category
+          - content_theme
+          - editorial_segment
+        description: Editorial content category targeted by the campaign.
+        expr: CONTENT_CATEGORY
+        data_type: VARCHAR(23)
+        sample_values:
+          - Lifestyle & Wellness
+          - Sports Enthusiasts
+          - Premium Drama
+      - name: RATE_TYPE
+        synonyms:
+          - commercial_rate_type
+          - pricing_model
+          - rate_classification
+        description: Contractual rate type (CPM, Fixed, Hybrid).
+        expr: RATE_TYPE
+        data_type: VARCHAR(6)
+        sample_values:
+          - Fixed
+          - Hybrid
+          - CPM
+      - name: TARGET_DEVICES
+        synonyms:
+          - campaign_devices
+          - device_mix
+          - targeted_devices
+        description: Array of devices observed for the campaign within the month.
+        expr: TARGET_DEVICES
+        data_type: ARRAY
+        sample_values:
+          - |-
+            [
+              "Mobile",
+              "Smart TV"
+            ]
+          - |-
+            [
+              "Smart TV",
+              "Web"
+            ]
+          - |-
+            [
+              "Web",
+              "Smart TV"
+            ]
+      - name: TARGET_PERSONAS
+        synonyms:
+          - audience_personas
+          - behavioural_targets
+          - reached_personas
+        description: Array of personas reached within the month based on daily aggregates.
+        expr: TARGET_PERSONAS
+        data_type: ARRAY
+        sample_values:
+          - |-
+            [
+              "LIFESTYLE_MINDED",
+              "KNOWLEDGE_SEEKER",
+              "SPORTS_ENGAGED",
+              "REALITY_FAN",
+              "FAMILY_HOUSEHOLD",
+              "PREMIUM_DRAMA"
+            ]
+          - |-
+            [
+              "SPORTS_ENGAGED",
+              "REALITY_FAN",
+              "KNOWLEDGE_SEEKER",
+              "PREMIUM_DRAMA",
+              "FAMILY_HOUSEHOLD",
+              "LIFESTYLE_MINDED"
+            ]
+          - |-
+            [
+              "SPORTS_ENGAGED",
+              "PREMIUM_DRAMA",
+              "FAMILY_HOUSEHOLD",
+              "LIFESTYLE_MINDED",
+              "KNOWLEDGE_SEEKER",
+              "REALITY_FAN"
+            ]
+      - name: VERTICAL
+        synonyms:
+          - business_category
+          - industry_vertical
+          - market_segment
+        description: Industry vertical classification for the campaign.
+        expr: VERTICAL
+        data_type: VARCHAR(10)
+        sample_values:
+          - Retail
+          - Technology
+          - Education
+    time_dimensions:
+      - name: REPORT_MONTH
+        synonyms:
+          - aggregation_month
+          - calendar_month
+          - month_of_report
+          - monthly_aggregation_date
+          - performance_month
+          - report_period
+          - reporting_month
+          - reporting_period
+        description: Month (truncated date) for aggregated performance; derived from report_date in the daily fact.
+        expr: REPORT_MONTH
+        data_type: DATE
+        sample_values:
+          - '2024-04-01'
+          - '2025-03-01'
+          - '2025-08-01'
+    facts:
+      - name: ACTIVE_DAYS
+        synonyms:
+          - active_delivery_days
+          - continuous_delivery_days
+          - days_with_activity
+          - days_with_impressions
+          - delivery_days
+        description: Number of distinct report_date values contributing to the month (measure of delivery continuity).
+        expr: ACTIVE_DAYS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '9'
+          - '25'
+          - '11'
+      - name: BOOKED_CPM
+        synonyms:
+          - booked_cpm_ceiling
+          - highest_booked_cpm
+          - highest_cpm_value
+          - max_booked_cpm
+          - max_cpm_rate
+          - upper_limit_booked_cpm
+        description: Highest booked CPM across days in the month.
+        expr: BOOKED_CPM
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '19.41'
+          - '8'
+          - '10'
+      - name: BOOKED_CTR
+        synonyms:
+          - ctr_ceiling
+          - highest_ctr_target
+          - max_click_through_rate
+          - max_ctr
+          - upper_limit_ctr
+        description: Highest booked CTR target across days in the month.
+        expr: BOOKED_CTR
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '0.003'
+          - '0.0106'
+          - '0.005'
+      - name: CLICKS
+        synonyms:
+          - ad_clicks
+          - click_throughs
+          - link_clicks
+          - tap_throughs
+          - user_clicks
+        description: Monthly sum of clicks delivered.
+        expr: CLICKS
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 1
+        sample_values:
+          - '164'
+          - '50'
+          - '12'
+      - name: CREATIVE_COUNT
+        synonyms:
+          - ad_count
+          - ad_templates
+          - ad_variants
+          - ad_versions
+          - creative_assets
+          - creative_mix
+        description: Maximum creative count observed in the month (approximation of creative mix).
+        expr: CREATIVE_COUNT
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        default_aggregation: 4
+        sample_values:
+          - '1'
+          - '3'
+          - '4'
+      - name: CTR
+        synonyms:
+          - ad_click_rate
+          - click_rate
+          - click_through_percentage
+          - click_through_rate
+          - click_to_impression_ratio
+        description: Monthly CTR (clicks / impressions) for the campaign.
+        expr: CTR
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '0.003982'
+          - '0.00404'
+          - '0.004022'
+      - name: ECPM
+        synonyms:
+          - average_ad_spend_per_thousand
+          - cost_per_mille
+          - cost_per_thousand_impressions
+          - cpm_rate
+          - ecpm_rate
+          - effective_cost_per_mille
+        description: Effective CPM for the month (spend * 1000 / impressions).
+        expr: ECPM
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '19.3475'
+          - '10.8402'
+          - '11.989'
+      - name: IMPRESSIONS
+        synonyms:
+          - ad_display_count
+          - ad_exposures
+          - ad_views
+          - delivered_impressions
+          - exposures
+          - monthly_ad_views
+          - served_impressions
+          - views
+        description: Monthly sum of impressions delivered.
+        expr: IMPRESSIONS
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 1
+        sample_values:
+          - '16286'
+          - '1914'
+          - '15794'
+      - name: OBSERVED_UNIQUE_SUBSCRIBERS
+        synonyms:
+          - monthly_reach
+          - monthly_unique_users
+          - observed_subscribers
+          - observed_unique_users
+          - subscriber_count
+          - total_reach
+          - unique_users
+        description: Sum of daily reach counts within the month (may over-count due to daily dedupe).
+        expr: OBSERVED_UNIQUE_SUBSCRIBERS
+        data_type: NUMBER(30,0)
+        access_modifier: public_access
+        default_aggregation: 4
+        sample_values:
+          - '1068'
+          - '8747'
+          - '4253'
+      - name: PEAK_DAILY_CAP
+        synonyms:
+          - daily_impression_ceiling
+          - daily_impression_limit
+          - max_daily_impression_cap
+          - max_daily_impression_target
+          - pacing_cap
+        description: Maximum daily impression cap observed in the month (pacing parameter).
+        expr: PEAK_DAILY_CAP
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        default_aggregation: 4
+        sample_values:
+          - '731'
+          - '933'
+          - '1266'
+      - name: SPEND
+        synonyms:
+          - allocation
+          - budget
+          - cost
+          - disbursement
+          - expenditure
+          - expense
+          - investment
+          - outlay
+        description: Monthly spend allocated to the campaign (synthetic currency).
+        expr: SPEND
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 1
+        sample_values:
+          - '431.3635'
+          - '528.4904'
+          - '139.7077'
+    primary_key:
+      columns:
+        - CAMPAIGN_ID
+  - name: AD_PERFORMANCE_DAILY_AGG
+    synonyms:
+      - ad_daily_aggregates
+      - ad_delivery_daily
+      - ad_performance_daily
+      - campaign_daily_metrics
+      - campaign_performance_daily
+      - daily_ad_performance
+      - daily_ad_spend
+      - daily_campaign_insights
+    description: Daily advertising performance fact table consolidating impressions, clicks, spend, and device/persona targeting attributes. Derived from ingest events with persona inference sourced from observed clickstream behaviour. Acts as the core fact for harmonized ad analytics.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: HARMONIZED
+      table: AD_PERFORMANCE_DAILY_AGG
+    dimensions:
+      - name: CAMPAIGN_ID
+        synonyms:
+          - ad_campaign_id
+          - ad_id
+          - campaign_identifier
+          - campaign_key
+          - synthetic_campaign_key
+        description: Unique identifier for a specific advertising campaign.
+        expr: CAMPAIGN_ID
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - AD_0122
+          - AD_0002
+          - AD_0112
+      - name: CONTENT_CATEGORY
+        synonyms:
+          - ad_category
+          - campaign_topic
+          - content_theme
+          - editorial_category
+        description: Editorial category the campaign targeted (e.g., Sports, Lifestyle).
+        expr: CONTENT_CATEGORY
+        data_type: VARCHAR(23)
+        sample_values:
+          - Lifestyle & Wellness
+          - Premium Drama
+          - Comedy Nights
+      - name: RATE_TYPE
+        synonyms:
+          - commercial_rate_type
+          - pricing_model
+          - pricing_structure
+          - rate_model
+          - rate_plan
+          - rate_structure
+        description: Commercial rate type (CPM, Fixed, Hybrid) chosen during campaign synthesis.
+        expr: RATE_TYPE
+        data_type: VARCHAR(6)
+        sample_values:
+          - Fixed
+          - Hybrid
+          - CPM
+        is_enum: true
+      - name: TARGET_DEVICES
+        synonyms:
+          - campaign_devices
+          - device_mix
+          - device_targets
+          - observed_devices
+          - reached_devices
+          - targeted_devices
+        description: Array of devices observed for the campaign on report_date; useful for device-mix analysis.
+        expr: TARGET_DEVICES
+        data_type: ARRAY
+        sample_values:
+          - |-
+            [
+              "Mobile",
+              "Smart TV"
+            ]
+          - |-
+            [
+              "Smart TV",
+              "Mobile"
+            ]
+          - |-
+            [
+              "Web",
+              "Smart TV"
+            ]
+      - name: TARGET_PERSONAS
+        synonyms:
+          - audience_targets
+          - behavioural_targets
+          - campaign_personas
+          - inferred_personas
+          - persona_targets
+          - reached_personas
+          - target_audiences
+        description: Array of inferred personas the campaign reached on report_date based on subscriber behaviour. Acts as behavioural targeting evidence rather than planned targeting.
+        expr: TARGET_PERSONAS
+        data_type: ARRAY
+        sample_values:
+          - |-
+            [
+              "LIFESTYLE_MINDED",
+              "FAMILY_HOUSEHOLD",
+              "REALITY_FAN",
+              "PREMIUM_DRAMA",
+              "SPORTS_ENGAGED",
+              "KNOWLEDGE_SEEKER"
+            ]
+          - |-
+            [
+              "PREMIUM_DRAMA",
+              "FAMILY_HOUSEHOLD",
+              "SPORTS_ENGAGED",
+              "REALITY_FAN",
+              "KNOWLEDGE_SEEKER",
+              "LIFESTYLE_MINDED"
+            ]
+          - |-
+            [
+              "PREMIUM_DRAMA",
+              "REALITY_FAN",
+              "SPORTS_ENGAGED",
+              "KNOWLEDGE_SEEKER",
+              "FAMILY_HOUSEHOLD",
+              "LIFESTYLE_MINDED"
+            ]
+      - name: VERTICAL
+        synonyms:
+          - business_area
+          - category
+          - domain
+          - industry
+          - market_segment
+          - sector
+        description: Industry vertical associated with the campaign (used for segmentation and rate card summaries).
+        expr: VERTICAL
+        data_type: VARCHAR(10)
+        sample_values:
+          - Finance
+          - CPG
+          - Retail
+        is_enum: true
+    time_dimensions:
+      - name: REPORT_DATE
+        synonyms:
+          - delivery_date
+          - performance_date
+          - report_day
+        description: Date key representing the delivery day for aggregated campaign performance.
+        expr: REPORT_DATE
+        data_type: DATE
+        sample_values:
+          - '2024-01-03'
+          - '2023-11-27'
+          - '2024-01-30'
+    facts:
+      - name: BOOKED_CPM
+        synonyms:
+          - booked_cost_per_mille
+          - contracted_cpm
+          - scheduled_cpm
+        description: Booked CPM at the campaign contract level—used to compare against delivered CPM.
+        expr: BOOKED_CPM
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '12'
+          - '19.41'
+          - '17.41'
+      - name: BOOKED_CTR
+        synonyms:
+          - booked_click_through_rate
+          - contracted_ctr
+          - target_ctr
+        description: Target CTR specified in the campaign metadata.
+        expr: BOOKED_CTR
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.0085'
+          - '0.0103'
+          - '0.0142'
+      - name: CLICKS
+        synonyms:
+          - ad_click_total
+          - daily_clicks
+          - delivered_clicks
+        description: Total delivered clicks for the campaign on report_date.
+        expr: CLICKS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '15'
+          - '21'
+          - '3'
+      - name: CREATIVE_COUNT
+        synonyms:
+          - creative_inventory
+          - creative_mix_count
+          - daily_creative_count
+        description: Number of creatives associated with the campaign (used for pacing logic and reporting context).
+        expr: CREATIVE_COUNT
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        sample_values:
+          - '3'
+          - '4'
+          - '2'
+      - name: CTR
+        synonyms:
+          - click_impression_ratio
+          - click_through_rate
+          - daily_ctr
+        description: Click-through rate computed as clicks / impressions with guard against divide-by-zero.
+        expr: CTR
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.003676'
+          - '0.002991'
+          - '0.003468'
+      - name: DAILY_IMPRESSION_CAP
+        synonyms:
+          - impression_cap
+          - max_daily_impressions
+          - pacing_cap
+        description: Maximum impression allowance per day according to campaign setup.
+        expr: DAILY_IMPRESSION_CAP
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        sample_values:
+          - '1035'
+          - '684'
+          - '926'
+      - name: ECPM
+        synonyms:
+          - actual_cpm
+          - delivered_cpm
+          - effective_cpm
+          - effective_cost_per_mille
+        description: Effective CPM calculated from spend and impressions (spend * 1000 / impressions).
+        expr: EFFECTIVE_CPM
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '16.683'
+          - '15.2772'
+          - '14.3589'
+      - name: IMPRESSIONS
+        synonyms:
+          - ad_views
+          - daily_impressions
+          - delivered_impressions
+        description: Total delivered impressions for the campaign on report_date.
+        expr: IMPRESSIONS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1120'
+          - '1290'
+          - '941'
+      - name: OBSERVED_UNIQUE_SUBSCRIBERS
+        synonyms:
+          - daily_unique_reach
+          - observed_unique_users
+          - reached_subscribers
+        description: Distinct subscriber count reached by the campaign on report_date after deduping impression/click events.
+        expr: OBSERVED_UNIQUE_SUBSCRIBERS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '530'
+          - '471'
+          - '420'
+      - name: SPEND
+        synonyms:
+          - cost_allocation
+          - daily_spend
+          - delivered_spend
+        description: Synthetic spend (in currency units) derived from CPM and impression delivery with controlled random variation.
+        expr: SPEND
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '15.7027'
+          - '14.6543'
+          - '10.1835'
+    primary_key:
+      columns:
+        - CAMPAIGN_ID
+        - REPORT_DATE
+  - name: AD_RATES
+    synonyms:
+      - ad_rate_card
+      - content_lad_rate_summary
+      - rate_card_metrics
+      - regional_pricing_mart
+    description: Rate card style mart summarising impressions, spend and rate metrics by content category and Local Authority District. This table is aggregated from AD_SALES_REGION_CATEGORY_RATES and provides a simplified rate card view for downstream pricing simulations and sales enablement.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: HARMONIZED
+      table: AD_RATES
+    dimensions:
+      - name: CONTENT_CATEGORY
+        synonyms:
+          - campaign_content_category
+          - content_group
+          - genre_segment
+        description: Content category dimension inherited from campaign targeting.
+        expr: CONTENT_CATEGORY
+        data_type: VARCHAR(23)
+        sample_values:
+          - Documentary & Knowledge
+          - Family Entertainment
+          - Comedy Nights
+      - name: INCOME_LEVEL
+        synonyms:
+          - income_segment
+          - lad_income_band
+          - regional_income_level
+        description: Income band aggregated at the LAD level from subscriber enrichment.
+        expr: INCOME_LEVEL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Lower
+          - Mid
+      - name: LAD_CODE
+        synonyms:
+          - geography_code
+          - lad_identifier
+          - regional_code
+        description: Local Authority District code representing geographic slice of delivery.
+        expr: LAD_CODE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - E06000032
+          - E07000008
+          - E09000020
+      - name: RURAL_URBAN
+        synonyms:
+          - area_classification
+          - rural_urban_indicator
+          - settlement_type
+        description: Rural/urban classification placeholder (currently UNKNOWN but kept for production alignment).
+        expr: RURAL_URBAN
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Urban Core
+          - Rural
+          - Urban
+    facts:
+      - name: CLICKS
+        synonyms:
+          - allocated_clicks
+          - lad_clicks
+          - regional_clicks
+        description: Total clicks allocated to the LAD and content category.
+        expr: CLICKS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '105.478343821'
+          - '78.359221057'
+          - '0.0254691689'
+      - name: CTR
+        synonyms:
+          - allocated_ctr
+          - lad_ctr
+          - regional_click_rate
+        description: Click-through rate for the LAD/category segment.
+        expr: CTR
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.006973'
+          - '0.006718'
+          - '0.006613'
+      - name: ECPM
+        synonyms:
+          - allocated_cpm
+          - lad_effective_cpm
+          - regional_ecpm
+        description: Effective CPM for the LAD/category segment (spend * 1000 / impressions).
+        expr: ECPM
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '21.224'
+          - '21.5532'
+          - '12.2304'
+      - name: IMPRESSIONS
+        synonyms:
+          - allocated_impressions
+          - lad_impressions
+          - regional_impressions
+        description: Total impressions allocated to the LAD and content category.
+        expr: IMPRESSIONS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '47296.585049234'
+          - '22937.088520601'
+          - '130769.947043109'
+      - name: SAMPLED_IMPRESSIONS
+        synonyms:
+          - compatibility_impressions
+          - sampled_allocated_impressions
+          - sampled_impression_volume
+        description: Alias for impressions retained for compatibility.
+        expr: SAMPLED_IMPRESSIONS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '50543.439121957'
+          - '3246.654509754'
+          - '130769.947043109'
+      - name: SPEND
+        synonyms:
+          - allocated_spend
+          - lad_spend
+          - regional_spend
+        description: Total spend allocated to the LAD and content category.
+        expr: SPEND
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '577.943565501'
+          - '156.717815424'
+          - '97.205398171'
+      - name: SUBSCRIBER_TOUCHPOINTS
+        synonyms:
+          - allocated_touchpoints
+          - audience_touchpoints
+          - lad_touchpoints
+        description: Total weighted subscriber touches contributing to the LAD/category segment.
+        expr: SUBSCRIBER_TOUCHPOINTS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '5102'
+          - '2'
+          - '910'
+      - name: UNIQUE_SUBSCRIBERS
+        synonyms:
+          - allocated_unique_subscribers
+          - lad_unique_reach
+          - regional_unique_subscribers
+        description: Distinct subscriber count allocated to the LAD/category segment.
+        expr: UNIQUE_SUBSCRIBERS
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        sample_values:
+          - '3017'
+          - '27808'
+          - '59459'
+    primary_key:
+      columns:
+        - CONTENT_CATEGORY
+        - LAD_CODE
+  - name: AD_SALES_REGION_CATEGORY_RATES
+    synonyms:
+      - ad_geo_performance
+      - lad_category_delivery
+      - regional_allocation_summary
+      - sales_region_rate_distribution
+    description: Regional ad effectiveness mart distributing campaign delivery metrics across Local Authority District geographies using observed ad events, supporting sales planning, pricing, and geo-performance analyses.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: HARMONIZED
+      table: AD_SALES_REGION_CATEGORY_RATES
+    dimensions:
+      - name: CONTENT_CATEGORY
+        synonyms:
+          - campaign_content_category
+          - content_group
+          - genre_segment
+        description: Content category dimension for the aggregated metrics (Sports, Lifestyle, etc.).
+        expr: CONTENT_CATEGORY
+        data_type: VARCHAR(23)
+        sample_values:
+          - Documentary & Knowledge
+          - Sports Enthusiasts
+          - Lifestyle & Wellness
+      - name: INCOME_LEVEL
+        synonyms:
+          - income_segment
+          - lad_income_band
+          - regional_income_level
+        description: Aggregated income band for the LAD based on subscriber profile enrichment.
+        expr: INCOME_LEVEL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Mid
+          - Lower
+      - name: LAD_CODE
+        synonyms:
+          - geography_code
+          - lad_identifier
+          - regional_code
+        description: Local Authority District code used to represent subscriber geography; derived from enriched subscriber profiles.
+        expr: LAD_CODE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - E09000001
+          - E08000003
+          - E07000103
+      - name: RURAL_URBAN
+        synonyms:
+          - area_classification
+          - rural_urban_indicator
+          - settlement_type
+        description: Rural/urban classification placeholder (set to UNKNOWN in synthetic data but reserved for future enrichment).
+        expr: RURAL_URBAN
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Urban Core
+          - Rural
+          - Urban
+    facts:
+      - name: CLICKS
+        synonyms:
+          - allocated_clicks
+          - lad_clicks
+          - regional_clicks
+        description: Campaign clicks allocated to the LAD using weighted distribution of ad events.
+        expr: CLICKS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '351.456057609'
+          - '89.696323438'
+          - '75.821145864'
+      - name: CTR
+        synonyms:
+          - allocated_ctr
+          - lad_ctr
+          - regional_click_rate
+        description: Derived CTR for the LAD (clicks / impressions) after allocation.
+        expr: CTR
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.004004125986'
+          - '0.005189661149'
+          - '0.00951205624'
+      - name: ECPM
+        synonyms:
+          - allocated_cpm
+          - lad_effective_cpm
+          - regional_ecpm
+        description: Effective CPM for the LAD (spend * 1000 / impressions) to support regional price benchmarking.
+        expr: ECPM
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '15.054624104'
+          - '13.743869071'
+          - '21.409472819'
+      - name: IMPRESSIONS
+        synonyms:
+          - allocated_impressions
+          - lad_impressions
+          - regional_impressions
+        description: Campaign impressions allocated to the LAD using weighted distribution of ad events.
+        expr: IMPRESSIONS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '50543.439121957'
+          - '15785.521656179'
+          - '26871.470287182'
+      - name: SAMPLED_IMPRESSIONS
+        synonyms:
+          - compatibility_impressions
+          - sampled_allocated_impressions
+          - sampled_impression_volume
+        description: Alias for impressions retained for backwards compatibility with earlier scripts.
+        expr: SAMPLED_IMPRESSIONS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '26871.470287182'
+          - '3246.654509754'
+          - '22937.088520601'
+      - name: SPEND
+        synonyms:
+          - allocated_spend
+          - lad_spend
+          - regional_spend
+        description: Attributed spend allocated to the LAD consistent with impression allocation.
+        expr: SPEND
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '985.475599654'
+          - '2.348977776'
+          - '156.717815424'
+      - name: SUBSCRIBER_TOUCHPOINTS
+        synonyms:
+          - allocated_touchpoints
+          - audience_touchpoints
+          - lad_touchpoints
+        description: Weighted audience touch count based on allocated ad event weights (proxy for exposures).
+        expr: SUBSCRIBER_TOUCHPOINTS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '11535'
+          - '8362'
+          - '13720'
+      - name: UNIQUE_SUBSCRIBERS
+        synonyms:
+          - allocated_unique_subscribers
+          - lad_unique_reach
+          - regional_unique_subscribers
+        description: Distinct subscribers estimated for the LAD via allocated ad event deduplication.
+        expr: UNIQUE_SUBSCRIBERS
+        data_type: NUMBER(30,0)
+        access_modifier: public_access
+        sample_values:
+          - '10500'
+          - '1935'
+          - '7352'
+    primary_key:
+      columns:
+        - CONTENT_CATEGORY
+        - LAD_CODE
+  - name: AGGREGATED_BEHAVIORAL_LOGS
+    synonyms:
+      - behavioural aggregation
+      - behavioural feature mart
+      - clickstream summary
+      - engagement metrics
+      - subscriber activity summary
+      - subscriber behaviour logs
+      - subscriber level behaviour
+      - user engagement metrics
+      - user interaction logs
+    description: Subscriber-level behavioural feature mart summarising clickstream intensity, engagement recency and inferred personas. Acts as the behavioural dimension for feature engineering and dashboards. This table provides foundational behavioral metrics that are extended in FE_SUBSCRIBER_FEATURES with additional engagement, monetization, and demographic signals.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: HARMONIZED
+      table: AGGREGATED_BEHAVIORAL_LOGS
+    dimensions:
+      - name: CONTENT_CATEGORIES
+        synonyms:
+          - consumed_genres
+          - consumed_themes
+          - content_preferences
+          - content_tags
+          - genre_affinity
+          - subscriber_interests
+          - thematic_categories
+        description: Array of distinct content tags consumed by the subscriber (normalised lower-case tokens).
+        expr: CONTENT_CATEGORIES
+        data_type: ARRAY
+        sample_values:
+          - |-
+            [
+              "/search",
+              "/profiles",
+              "/account/subscription",
+              "originals",
+              "sports",
+              "/account/upgrade",
+              "documentary",
+              "drama"
+            ]
+          - |-
+            [
+              "/profiles",
+              "drama",
+              "/search",
+              "originals",
+              "/account/subscription",
+              "/account/upgrade",
+              "sports",
+              "documentary"
+            ]
+          - |-
+            [
+              "email_opened",
+              "originals",
+              "/account/upgrade",
+              "/account/subscription",
+              "/profiles",
+              "lifestyle"
+            ]
+      - name: PERSONA
+        synonyms:
+          - behavioural_label
+          - content_persona
+          - dominant_persona
+          - inferred_persona
+          - persona_category
+          - persona_type
+          - user_profile
+        description: Behaviourally inferred persona label based on dominant content interactions (e.g., SPORTS_ENGAGED).
+        expr: PERSONA
+        data_type: VARCHAR(19)
+        sample_values:
+          - KNOWLEDGE_SEEKER
+          - PREMIUM_DRAMA
+          - REALITY_FAN
+      - name: PRIMARY_CONTENT_TAG
+        description: Primary content tag representing the dominant genre/theme of the subscriber’s consumption.
+        expr: PRIMARY_CONTENT_TAG
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - sports
+          - originals
+          - lifestyle
+      - name: UNIQUE_ID
+        synonyms:
+          - account_id
+          - client_id
+          - customer_id
+          - identifier
+          - subscriber_id
+          - user_id
+        description: Subscriber unique identifier; join key to SUBSCRIBER_PROFILE_ENRICHED and analytic feature tables.
+        expr: UNIQUE_ID
+        data_type: VARCHAR(36)
+        sample_values:
+          - dd26ef38-4b50-4357-8681-5c9c4c4b61c3
+          - 68377114-eec7-4f1e-aed0-375be9c61f86
+          - 7f832a0b-c55c-4db9-b7dd-194502c379c3
+    facts:
+      - name: AVG_SITE_VISITS_PER_MONTH
+        synonyms:
+          - average_visit_days
+          - monthly_visit_frequency
+          - site_visit_average
+        description: Average number of active visit days per month calculated from clickstream events.
+        expr: AVG_SITE_VISITS_PER_MONTH
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '6'
+          - '3.74'
+          - '3.43'
+      - name: LAST_EVENT_TS
+        synonyms:
+          - last_behavioral_event_ts
+          - latest_clickstream_event
+          - most_recent_event_timestamp
+        description: Timestamp of the most recent clickstream event for the subscriber.
+        expr: LAST_EVENT_TS
+        data_type: TIMESTAMP_NTZ(9)
+        access_modifier: public_access
+        sample_values:
+          - 2025-10-21T02:34:00.000+0000
+          - 2025-10-30T21:39:00.000+0000
+          - 2025-10-17T06:44:00.000+0000
+      - name: LOGIN_FREQUENCY_PER_WEEK
+        synonyms:
+          - average_weekly_logins
+          - login_rate_per_week
+          - weekly_login_frequency
+        description: Average login frequency per week derived from daily activity counts.
+        expr: LOGIN_FREQUENCY_PER_WEEK
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1.97'
+          - '2.5'
+          - '3.82'
+      - name: TOTAL_EVENTS
+        synonyms:
+          - behavioural_event_count
+          - cumulative_event_count
+          - total_clickstream_events
+        description: Total number of clickstream events captured across the observation window.
+        expr: TOTAL_EVENTS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '384'
+          - '426'
+          - '654'
+    primary_key:
+      columns:
+        - UNIQUE_ID
+  - name: FE_CONTENT_VIEWS_DAILY
+    synonyms:
+      - content_performance_daily
+      - daily_content_analytics
+      - daily_content_metrics
+      - daily_viewing_aggregates
+    description: Daily aggregation of content viewing metrics by content type, category, and device. Supports content performance analysis and trend monitoring.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: ANALYSE
+      table: FE_CONTENT_VIEWS_DAILY
+    dimensions:
+      - name: CONTENT_CATEGORY
+        synonyms:
+          - content_genre
+          - editorial_category
+          - genre
+        description: Content category/genre (Sports, Drama, Lifestyle, etc.).
+        expr: CONTENT_CATEGORY
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Sports Enthusiasts
+          - Premium Drama
+          - Lifestyle & Wellness
+      - name: CONTENT_TYPE
+        synonyms:
+          - content_format
+          - media_type
+          - viewing_format
+        description: Type of content viewed (series, movie, live, short_form, etc.).
+        expr: CONTENT_TYPE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - series
+          - movie
+          - live
+          - short_form
+      - name: DEVICE
+        synonyms:
+          - device_type
+          - platform
+          - viewing_device
+        description: Device type used for viewing (Mobile, Smart TV, Web, Tablet).
+        expr: DEVICE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Mobile
+          - Smart TV
+          - Web
+          - Tablet
+    time_dimensions:
+      - name: VIEW_DATE
+        synonyms:
+          - aggregation_date
+          - content_date
+          - viewing_date
+        description: Date (truncated to day) for the aggregated metrics.
+        expr: VIEW_DATE
+        data_type: DATE
+        sample_values:
+          - '2024-01-15'
+          - '2024-02-20'
+          - '2024-03-10'
+    facts:
+      - name: AVG_SESSION_DURATION_SECONDS
+        synonyms:
+          - average_session_length
+          - avg_viewing_duration
+          - mean_session_duration
+        description: Average duration per viewing session in seconds for the day/content/device combination.
+        expr: AVG_SESSION_DURATION_SECONDS
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '278'
+          - '273'
+          - '227'
+      - name: AVG_WATCH_TIME_PER_VIEWER_SECONDS
+        synonyms:
+          - average_watch_time_per_user
+          - per_viewer_watch_time
+          - viewer_average_duration
+        description: Average watch time per unique viewer in seconds for the day/content/device combination.
+        expr: AVG_WATCH_TIME_PER_VIEWER_SECONDS
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '278'
+          - '273'
+          - '308'
+      - name: PLAY_START_COUNT
+        synonyms:
+          - play_events_count
+          - starts_count
+          - viewing_starts
+        description: Total number of PLAY_START events for the day/content/device combination.
+        expr: PLAY_START_COUNT
+        data_type: NUMBER(13,0)
+        access_modifier: public_access
+        default_aggregation: 1
+        sample_values:
+          - '1250'
+          - '890'
+          - '2100'
+      - name: PLAY_STOP_COUNT
+        synonyms:
+          - stop_events_count
+          - stops_count
+          - viewing_stops
+        description: Total number of PLAY_STOP events for the day/content/device combination.
+        expr: PLAY_STOP_COUNT
+        data_type: NUMBER(13,0)
+        access_modifier: public_access
+        default_aggregation: 1
+        sample_values:
+          - '1180'
+          - '845'
+          - '1980'
+      - name: SESSION_COMPLETION_RATE
+        synonyms:
+          - completion_rate
+          - finish_rate
+          - session_completion_ratio
+        description: Fraction of started sessions that were completed (completed_sessions / total_sessions_started).
+        expr: SESSION_COMPLETION_RATE
+        data_type: NUMBER(19,6)
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '0.75'
+          - '0.68'
+          - '0.82'
+      - name: TOTAL_WATCH_TIME_SECONDS
+        synonyms:
+          - aggregated_watch_duration
+          - daily_watch_time
+          - total_viewing_time
+        description: Total watch time in seconds aggregated for the day/content/device combination.
+        expr: TOTAL_WATCH_TIME_SECONDS
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 1
+        sample_values:
+          - '125400'
+          - '87600'
+          - '210000'
+      - name: UNIQUE_ACTIVE_VIEWERS
+        synonyms:
+          - active_unique_users
+          - daily_active_viewers
+          - distinct_active_viewers
+        description: Count of distinct subscribers who had viewing activity (PLAY_START or PLAY_STOP) on this day/content/device combination.
+        expr: UNIQUE_ACTIVE_VIEWERS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        default_aggregation: 4
+        sample_values:
+          - '420'
+          - '300'
+          - '650'
+      - name: UNIQUE_VIEWERS
+        synonyms:
+          - daily_unique_viewers
+          - distinct_viewers
+          - unique_users
+        description: Count of distinct subscribers who interacted with content on this day/content/device combination.
+        expr: UNIQUE_VIEWERS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        default_aggregation: 4
+        sample_values:
+          - '450'
+          - '320'
+          - '680'
+    primary_key:
+      columns:
+        - VIEW_DATE
+        - CONTENT_TYPE
+        - CONTENT_CATEGORY
+        - DEVICE
+  - name: FE_SUBSCRIBER_CHURN_RISK
+    synonyms:
+      - churn_prediction
+      - churn_risk_assessment
+      - customer_attrition_risk
+      - customer_churn_prediction
+      - customer_churn_risk
+      - subscriber_attrition_risk
+      - subscriber_churn_prediction
+      - subscriber_churn_risk
+    description: This table stores information about the churn risk of subscribers, including their unique identifier, profile ID, churn label, model score, predicted churn probability, and churn risk segment, along with the timestamp when the data was generated.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: ANALYSE
+      table: FE_SUBSCRIBER_CHURN_RISK
+    dimensions:
+      - name: UNIQUE_ID
+        synonyms:
+          - entity_id
+          - id
+          - identifier
+          - record_id
+          - row_id
+          - unique_identifier
+        description: A unique identifier for each subscriber in the system, used to distinguish and track individual subscribers across different data points and analysis.
+        expr: UNIQUE_ID
+        data_type: VARCHAR(36)
+        sample_values:
+          - 294b2e3e-a465-4660-a9c6-04d92869b6dd
+          - 3a4e54f7-fb2e-4483-8c7c-0772ef6414ea
+          - a3e4def4-5aec-46f7-817a-6cd048886df1
+    facts:
+      - name: CHURN_LABEL
+        synonyms:
+          - churn_flag
+          - churn_indicator
+          - churn_outcome
+          - churn_result
+          - churn_status
+          - customer_churn
+        description: Indicates whether a subscriber is at risk of churning (1) or not (0).
+        expr: CHURN_LABEL
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1'
+          - '0'
+      - name: CHURN_RISK_SEGMENT
+        synonyms:
+          - churn_category
+          - churn_level
+          - customer_segment
+          - risk_group
+          - risk_segmentation
+        description: Categorization of a subscriber's likelihood to churn, with 'High' indicating a higher probability of the subscriber ending their service.
+        expr: CHURN_RISK_SEGMENT
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+        sample_values:
+          - Medium
+          - High
+      - name: MODEL_SCORE
+        synonyms:
+          - confidence_level
+          - model_accuracy
+          - model_confidence
+          - model_output
+          - predicted_value
+          - prediction_score
+          - score_value
+        description: A numerical score indicating the likelihood of a subscriber to churn, with higher values representing a higher risk of churn.
+        expr: MODEL_SCORE
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '0.1731782446'
+          - '1.015759513'
+          - '1.080609644'
+      - name: PREDICTED_CHURN_PROB
+        synonyms:
+          - churn_confidence_score
+          - churn_prediction_score
+          - churn_probability
+          - churn_risk_score
+          - predicted_churn_likelihood
+          - probability_of_churn
+        description: Sigmoid-transformed probability estimate from the linear regression model.
+        expr: PREDICTED_CHURN_PROB
+        data_type: FLOAT
+        access_modifier: public_access
+        default_aggregation: 2
+        sample_values:
+          - '0.5412896957'
+          - '0.5376230691'
+          - '0.546523894'
+    primary_key:
+      columns:
+        - UNIQUE_ID
+  - name: FE_SUBSCRIBER_FEATURES
+    synonyms:
+      - behavioural_data
+      - customer_characteristics
+      - demographic_insights
+      - engagement_metrics
+      - monetization_signals
+      - subscriber_features
+      - user_attributes
+    description: This table captures a wide range of subscriber features, including behavioral, engagement, monetization, and demographic signals, to support downstream modeling and analysis of subscriber activity and preferences. This table extends AGGREGATED_BEHAVIORAL_LOGS with additional engineered features and inherits demographic attributes from SUBSCRIBER_PROFILE_ENRICHED.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: ANALYSE
+      table: FE_SUBSCRIBER_FEATURES
+    dimensions:
+      - name: AREA_NAME
+        synonyms:
+          - lad_area_label
+          - locality_name
+          - region_area
+        description: Geographic area where the subscriber is located.
+        expr: AREA_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Bourne End
+          - Gloucester
+          - Cowfold
+      - name: CONTENT_CATEGORY_VECTOR
+        synonyms:
+          - consumed_category_path
+          - content_affinity_vector
+          - content_interaction_sequence
+        description: A list of content categories that a subscriber has interacted with, in the order they were accessed, with duplicates allowed to indicate multiple interactions with the same category.
+        expr: CONTENT_CATEGORY_VECTOR
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - /profiles,/account/upgrade,drama,originals,documentary,sports,/account/subscription,/search
+          - /account/upgrade,drama,kids,/profiles,/account/subscription,originals,/search,/settings/parental-controls
+          - lifestyle,email_opened,originals,/account/subscription,/profiles,/account/upgrade
+      - name: EDUCATION_LEVEL
+        synonyms:
+          - academic_level
+          - education_attainment
+          - schooling_level
+        description: The highest level of education completed by the subscriber.
+        expr: EDUCATION_LEVEL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Some College
+          - Graduate
+          - High School
+      - name: FAMILY_STATUS
+        synonyms:
+          - family_composition
+          - household_status
+          - household_type
+        description: The type of household composition of the subscriber, categorized as either a couple with dependent children, a couple without children, or a single person living alone.
+        expr: FAMILY_STATUS
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Single Person Household
+          - Couple - Dependent Children
+          - Single Parent - Dependent Children
+      - name: INCOME_LEVEL
+        synonyms:
+          - economic_tier
+          - household_income_band
+          - income_segment
+        description: The income level of the subscriber, categorized as Lower, Mid, or Upper Mid, indicating their relative economic status.
+        expr: INCOME_LEVEL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Mid
+          - Upper Mid
+          - High
+      - name: LAD_CODE
+        synonyms:
+          - geography_code
+          - lad_identifier
+          - regional_code
+        description: Lower Layer Super Output Area (LSOA) or Middle Layer Super Output Area (MSOA) code, used to identify a geographic area in England and Wales for statistical purposes.
+        expr: LAD_CODE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - E08000022
+          - E09000001
+          - E09000005
+      - name: MARITAL_STATUS
+        synonyms:
+          - civil_status
+          - marital_state
+          - relationship_status
+        description: The marital status of the subscriber, indicating whether they are currently widowed, married or in a civil partnership, or divorced or separated.
+        expr: MARITAL_STATUS
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Married / Civil Partnership
+          - Single - Never Married
+          - Divorced / Separated
+      - name: PERSONA
+        synonyms:
+          - audience_persona
+          - behavioural_persona
+          - persona_label
+        description: Behaviourally inferred persona label.
+        expr: PERSONA
+        data_type: VARCHAR(19)
+        sample_values:
+          - REALITY_FAN
+          - LIFESTYLE_MINDED
+          - SPORTS_ENGAGED
+      - name: TIER
+        synonyms:
+          - plan_type
+          - service_level
+          - subscription_tier
+        description: The tier of service subscribed to by the user, indicating the level of features and benefits they have access to, with options including Ad-supported (basic features with advertisements), Standard (standard features with limited ads), and Premium (full features with no ads).
+        expr: TIER
+        data_type: VARCHAR(12)
+        sample_values:
+          - Ad-supported
+          - Standard
+          - Premium
+      - name: UNIQUE_ID
+        synonyms:
+          - account_identifier
+          - customer_unique_id
+          - subscriber_unique_id
+        description: Unique identifier for a subscriber feature, used to distinguish between different features or services subscribed to by a customer.
+        expr: UNIQUE_ID
+        data_type: VARCHAR(36)
+        sample_values:
+          - 47e9e3a0-5db1-49c2-8eaf-70f0c7d33ba8
+          - 567cb74c-9bb3-4646-aa54-850f2b4b01c6
+          - 25f9c321-cc90-4f7d-9c39-6a9e401c8e58
+    time_dimensions:
+      - name: BEHAVIOURAL_LAST_EVENT_TS
+        synonyms:
+          - last_activity_timestamp
+          - last_behaviour_ts
+          - latest_behaviour_event
+        description: The timestamp of the most recent event triggered by the subscriber, indicating the last time they interacted with the system or exhibited a specific behavior.
+        expr: BEHAVIOURAL_LAST_EVENT_TS
+        data_type: TIMESTAMP_NTZ(9)
+        sample_values:
+          - 2025-10-20T05:35:00.000+0000
+          - 2025-10-25T05:50:00.000+0000
+          - 2025-10-23T01:11:00.000+0000
+      - name: CLICKSTREAM_LAST_EVENT_TS
+        synonyms:
+          - clickstream_end_timestamp
+          - last_clickstream_ts
+          - recent_clickstream_event
+        description: The timestamp of the most recent event recorded in the clickstream for each subscriber.
+        expr: CLICKSTREAM_LAST_EVENT_TS
+        data_type: TIMESTAMP_NTZ(9)
+        sample_values:
+          - 2025-10-29T02:49:00.000+0000
+          - 2025-10-25T23:04:00.000+0000
+          - 2025-11-01T04:56:00.000+0000
+      - name: LAST_AD_EVENT_TS
+        synonyms:
+          - ad_activity_last_ts
+          - last_ad_interaction_ts
+          - recent_ad_event_timestamp
+        description: Timestamp of the last advertising event associated with the subscriber.
+        expr: LAST_AD_EVENT_TS
+        data_type: TIMESTAMP_NTZ(9)
+        sample_values:
+          - 2025-11-11T05:22:44.000+0000
+          - 2025-09-24T22:31:50.000+0000
+    facts:
+      - name: AD_CLICK_RATE
+        synonyms:
+          - ad_click_ratio
+          - ad_ctr
+          - advertisement_click_rate
+        description: The percentage of times a subscriber clicks on an advertisement after being exposed to it.
+        expr: AD_CLICK_RATE
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.5'
+          - '0.01560283688'
+          - '0.25'
+      - name: AGE
+        synonyms:
+          - age_value
+          - customer_age
+          - subscriber_age
+        description: The age of the subscriber.
+        expr: AGE
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        sample_values:
+          - '45'
+          - '50'
+          - '36'
+      - name: AGE_BAND
+        synonyms:
+          - age_category
+          - age_segment
+          - life_stage_band
+        description: 'The age range of the subscriber, categorized into three groups: Established Career (typically 40-64 years old), Retirement/Senior Years (65+ years old), and Young Adults/Early (18-39 years old).'
+        expr: AGE_BAND
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+        sample_values:
+          - RETIREMENT_SENIOR_YEARS
+          - CHILDHOOD_ELEMENTARY_SCHOOL
+          - PRIME_SETTLING_FAMILY_FORMATION
+      - name: ATTRIBUTED_SPEND
+        synonyms:
+          - attributed_revenue
+          - spend_allocation
+          - subscriber_spend
+        description: The total amount spent by a subscriber that can be attributed to a specific feature or campaign.
+        expr: ATTRIBUTED_SPEND
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1.6773273'
+          - '5.7336705'
+          - '0.9676301'
+      - name: AVG_SITE_VISITS_PER_MONTH
+        synonyms:
+          - average_visit_days
+          - monthly_visit_frequency
+          - site_visit_average
+        description: Average number of times a subscriber visits the website per month.
+        expr: AVG_SITE_VISITS_PER_MONTH
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '3.79'
+          - '9'
+          - '3.61'
+      - name: BEHAVIORAL_DIGITAL_MEDIA_CONSUMPTION_INDEX
+        synonyms:
+          - digital_engagement_index
+          - digital_media_index
+          - media_consumption_score
+        description: A score indicating the likelihood of a subscriber to consume digital media, with higher values representing a greater likelihood of engaging in online activities such as streaming, browsing, and downloading digital content.
+        expr: BEHAVIORAL_DIGITAL_MEDIA_CONSUMPTION_INDEX
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '7.83'
+          - '7.05'
+          - '6.54'
+      - name: BEHAVIORAL_FAST_FASHION_RETAIL_PROPENSITY
+        synonyms:
+          - fashion_interest_score
+          - fast_fashion_index
+          - fast_fashion_propensity
+        description: A score indicating the likelihood that a subscriber will exhibit behaviors associated with fast fashion retail, such as frequent purchases of trendy clothing, with higher values indicating a greater propensity.
+        expr: BEHAVIORAL_FAST_FASHION_RETAIL_PROPENSITY
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '4.71'
+          - '7.56'
+          - '6.54'
+      - name: BEHAVIORAL_FINANCIAL_INVESTMENT_INTEREST
+        synonyms:
+          - finance_affinity_score
+          - financial_interest_index
+          - investment_propensity
+        description: This column represents a subscriber's interest in financial investments, with higher values indicating a stronger interest, based on their behavioral data.
+        expr: BEHAVIORAL_FINANCIAL_INVESTMENT_INTEREST
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '2.33'
+          - '4.39'
+          - '4.71'
+      - name: BEHAVIORAL_GROCERY_ONLINE_DELIVERY_USE
+        synonyms:
+          - grocery_delivery_index
+          - grocery_delivery_usage
+          - online_grocery_propensity
+        description: The percentage of subscribers who have used online grocery delivery services, with values representing the proportion of subscribers who have used the service 0-2 times (0.43), 3-5 times (4.84), and 6 or more times (5).
+        expr: BEHAVIORAL_GROCERY_ONLINE_DELIVERY_USE
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '7.56'
+          - '4.71'
+          - '3.51'
+      - name: BEHAVIOURAL_EVENTS
+        synonyms:
+          - behaviour_events_total
+          - behavioural_event_count
+          - behavioural_signal_count
+        description: |-
+          This column tracks the types of behavioural events that a subscriber has triggered, with the following values:
+          - 9: Unknown/Undefined
+          - 22: Customer Initiated Cancellation
+          - 23: Customer Initiated Suspension
+        expr: BEHAVIOURAL_EVENTS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '535'
+          - '579'
+          - '507'
+      - name: CLICK_EVENTS
+        synonyms:
+          - ad_click_events
+          - click_event_count
+          - total_click_events
+        description: The total number of click events triggered by a subscriber.
+        expr: CLICK_EVENTS
+        data_type: NUMBER(13,0)
+        access_modifier: public_access
+        sample_values:
+          - '689'
+          - '9'
+          - '933'
+      - name: CLICK_UNITS
+        synonyms:
+          - click_units_total
+          - click_volume_units
+          - weighted_clicks
+        description: The total number of click units allocated to a subscriber, representing the maximum number of clicks they can make within a specific timeframe or subscription period.
+        expr: CLICK_UNITS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '157'
+          - '5'
+          - '93'
+      - name: CLICK_UNITS_180
+        synonyms:
+          - 180_day_click_volume
+          - click_units_180d
+          - six_month_click_units
+        description: The total number of click units a subscriber has used within the last 180 days.
+        expr: CLICK_UNITS_180
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '130'
+          - '85'
+          - '78'
+      - name: CLICK_UNITS_30
+        synonyms:
+          - click_units_30d
+          - recent_click_volume
+          - thirty_day_click_units
+        description: The total number of click units a subscriber has used within a 30-day period.
+        expr: CLICK_UNITS_30
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '60'
+          - '19'
+          - '0'
+      - name: CLICK_UNITS_90
+        synonyms:
+          - click_units_90d
+          - ninety_day_click_units
+          - quarterly_click_volume
+        description: The total number of click units a subscriber has used over the last 90 days.
+        expr: CLICK_UNITS_90
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '31'
+          - '5'
+          - '3'
+      - name: CLICKSTREAM_ACTIVE_DAYS
+        synonyms:
+          - active_clickstream_days
+          - active_days_count
+          - engagement_days
+        description: The number of days a subscriber has been actively using the clickstream feature.
+        expr: CLICKSTREAM_ACTIVE_DAYS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '91'
+          - '87'
+          - '59'
+      - name: CLICKSTREAM_EVENTS
+        synonyms:
+          - clickstream_event_count
+          - interaction_events
+          - total_session_events
+        description: The number of clickstream events associated with a subscriber.
+        expr: CLICKSTREAM_EVENTS
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '62'
+          - '476'
+          - '535'
+      - name: DAYS_SINCE_AD_ENGAGEMENT
+        synonyms:
+          - ad_engagement_recency
+          - ad_inactivity_days
+          - days_since_ad_event
+        description: The number of days since a subscriber last engaged with an advertisement.
+        expr: DAYS_SINCE_AD_ENGAGEMENT
+        data_type: NUMBER(9,0)
+        access_modifier: public_access
+        sample_values:
+          - '41'
+          - '43'
+          - '135'
+      - name: DAYS_SINCE_BEHAVIOUR
+        synonyms:
+          - behaviour_recency_days
+          - days_since_behavioural_event
+          - inactivity_days
+        description: The number of days since a subscriber last exhibited a specific behaviour, such as making a purchase, logging in, or engaging with the service.
+        expr: DAYS_SINCE_BEHAVIOUR
+        data_type: NUMBER(9,0)
+        access_modifier: public_access
+        sample_values:
+          - '610'
+          - '565'
+          - '35'
+      - name: DAYS_SINCE_CLICKSTREAM
+        synonyms:
+          - clickstream_inactivity_days
+          - clickstream_recency_days
+          - days_since_clickstream_event
+        description: The number of days since the subscriber last interacted with the service through a clickstream event.
+        expr: DAYS_SINCE_CLICKSTREAM
+        data_type: NUMBER(9,0)
+        access_modifier: public_access
+        sample_values:
+          - '667'
+          - '723'
+          - '642'
+      - name: DISTINCT_EVENT_TYPES
+        synonyms:
+          - distinct_behaviour_events
+          - event_type_variety
+          - unique_event_types
+        description: The number of unique event types that a subscriber has triggered.
+        expr: DISTINCT_EVENT_TYPES
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '11'
+          - '8'
+          - '12'
+      - name: EVENTS_PER_ACTIVE_DAY
+        synonyms:
+          - active_day_event_rate
+          - average_events_per_day
+          - events_per_engagement_day
+        description: The average number of events generated by an active subscriber per day.
+        expr: EVENTS_PER_ACTIVE_DAY
+        data_type: NUMBER(24,6)
+        access_modifier: public_access
+        sample_values:
+          - '6.550725'
+          - '6.975610'
+          - '6.542169'
+      - name: IMPRESSION_EVENTS
+        synonyms:
+          - ad_impression_events
+          - impression_event_count
+          - impression_occurrences
+        description: The number of times a subscriber's ad or content was displayed to a user, including the total number of impressions (257), the number of impressions that were 700 pixels or larger (700), and the number of impressions that were 256 pixels or smaller (256).
+        expr: IMPRESSION_EVENTS
+        data_type: NUMBER(13,0)
+        access_modifier: public_access
+        sample_values:
+          - '250'
+          - '364'
+          - '248'
+      - name: IMPRESSION_UNITS
+        synonyms:
+          - impression_units_total
+          - impression_volume
+          - weighted_impressions
+        description: The total number of ad impressions served to a subscriber.
+        expr: IMPRESSION_UNITS
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '682'
+          - '1121'
+          - '910'
+      - name: IMPRESSION_UNITS_180
+        synonyms:
+          - 180_day_impression_volume
+          - impression_units_180d
+          - six_month_impression_units
+        description: The total number of impression units served to a subscriber within a 180-day period.
+        expr: IMPRESSION_UNITS_180
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '191'
+          - '39'
+          - '33'
+      - name: IMPRESSION_UNITS_30
+        synonyms:
+          - impression_units_30d
+          - recent_impression_volume
+          - thirty_day_impressions
+        description: The total number of impression units that a subscriber has viewed in the last 30 days.
+        expr: IMPRESSION_UNITS_30
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '50'
+          - '60'
+          - '33'
+      - name: IMPRESSION_UNITS_90
+        synonyms:
+          - impression_units_90d
+          - ninety_day_impressions
+          - quarterly_impression_volume
+        description: The total number of impression units that a subscriber has viewed over the last 90 days.
+        expr: IMPRESSION_UNITS_90
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '140'
+          - '59'
+          - '66'
+      - name: LOGIN_FREQUENCY_PER_WEEK
+        synonyms:
+          - average_weekly_logins
+          - login_rate_per_week
+          - weekly_login_frequency
+        description: The average number of times a subscriber logs in to the system per week.
+        expr: LOGIN_FREQUENCY_PER_WEEK
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.55'
+          - '1.22'
+          - '1.94'
+      - name: MAU_COUNT
+        synonyms:
+          - active_months_count
+          - mau_total
+          - monthly_active_users_count
+        description: Monthly Active Users - Count of distinct months where subscriber had any clickstream activity.
+        expr: MAU_COUNT
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '12'
+          - '8'
+          - '24'
+      - name: MAU_CURRENT_MONTH
+        synonyms:
+          - active_this_month
+          - current_month_active
+          - mau_flag
+        description: Binary indicator (1/0) for whether subscriber was active in the current month.
+        expr: MAU_CURRENT_MONTH
+        data_type: NUMBER(1,0)
+        access_modifier: public_access
+        sample_values:
+          - '1'
+          - '0'
+      - name: MAV_COUNT
+        synonyms:
+          - mav_total
+          - monthly_active_viewers_count
+          - viewing_months_count
+        description: Monthly Active Viewers - Count of distinct months where subscriber had viewing activity (PLAY_START or PLAY_STOP events).
+        expr: MAV_COUNT
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '10'
+          - '6'
+          - '18'
+      - name: MAV_CURRENT_MONTH
+        synonyms:
+          - current_month_viewer
+          - mav_flag
+          - viewed_this_month
+        description: Binary indicator (1/0) for whether subscriber had viewing activity in the current month.
+        expr: MAV_CURRENT_MONTH
+        data_type: NUMBER(1,0)
+        access_modifier: public_access
+        sample_values:
+          - '1'
+          - '0'
+      - name: MONETIZATION_180
+        synonyms:
+          - 180_day_revenue
+          - monetization_180d
+          - six_month_monetization
+        description: Monetization rate for 180-day subscribers, representing the average revenue generated per user over a 6-month period.
+        expr: MONETIZATION_180
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.5086565'
+          - '3.8973537'
+          - '0.5618894'
+      - name: MONETIZATION_90
+        synonyms:
+          - monetization_90d
+          - ninety_day_monetization
+          - quarterly_revenue
+        description: Monetization rate for 90-day period, representing the proportion of subscribers who have made a purchase or generated revenue within the last 90 days.
+        expr: MONETIZATION_90
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1.6277466'
+          - '0.6032798'
+          - '3.6660984'
+      - name: MONETIZATION_INDEX
+        synonyms:
+          - monetization_ratio
+          - monetization_score
+          - revenue_index
+        description: Monetization Index represents the revenue-generating potential of a subscriber, with higher values indicating a greater likelihood of generating revenue.
+        expr: MONETIZATION_INDEX
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.023330182'
+          - '0.050164042'
+          - '0.013470874'
+      - name: MONETIZATION_TOTAL
+        synonyms:
+          - cumulative_monetization
+          - total_attributed_spend
+          - total_monetization
+        description: Total attributed spend derived from ad event weights and CPM allocations.
+        expr: MONETIZATION_TOTAL
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.0625923'
+          - '6.69777'
+          - '0.276826'
+      - name: NEGATIVE_EVENT_COUNT
+        synonyms:
+          - adverse_event_count
+          - negative_events_total
+          - negative_qoe_count
+        description: The total number of negative events associated with a subscriber.
+        expr: NEGATIVE_EVENT_COUNT
+        data_type: NUMBER(18,0)
+        access_modifier: public_access
+        sample_values:
+          - '31'
+          - '15'
+          - '32'
+      - name: NEGATIVE_EVENT_COUNT_30
+        synonyms:
+          - negative_events_30d
+          - recent_negative_event_count
+          - thirty_day_negative_events
+        description: The total number of negative events experienced by a subscriber within the last 30 days.
+        expr: NEGATIVE_EVENT_COUNT_30
+        data_type: NUMBER(13,0)
+        access_modifier: public_access
+        sample_values:
+          - '2'
+          - '3'
+          - '1'
+      - name: NEGATIVE_EVENT_RATIO
+        synonyms:
+          - adverse_event_ratio
+          - negative_event_percentage
+          - negative_event_share
+        description: Fraction of events that were negative QoE events over lifetime.
+        expr: NEGATIVE_EVENT_RATIO
+        data_type: NUMBER(24,6)
+        access_modifier: public_access
+        sample_values:
+          - '0.019380'
+          - '0.044753'
+          - '0.042969'
+      - name: VISIT_TO_LOGIN_RATIO
+        synonyms:
+          - visit_login_ratio
+          - visit_to_login_rate
+          - visits_per_login
+        description: The ratio of website visits to successful logins, indicating the proportion of users who successfully log in after visiting the site.
+        expr: VISIT_TO_LOGIN_RATIO
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1.074712644'
+          - '1.077868852'
+          - '0.654494382'
+      - name: WATCH_BINGE_INDICATOR
+        synonyms:
+          - binge_behavior_indicator
+          - binge_watching_flag
+          - heavy_viewing_indicator
+        description: Binary indicator (1/0) for binge-watching behavior (3+ sessions per day or 2+ hours per day).
+        expr: WATCH_BINGE_INDICATOR
+        data_type: NUMBER(1,0)
+        access_modifier: public_access
+        sample_values:
+          - '1'
+          - '0'
+      - name: WATCH_COMPLETION_RATE
+        synonyms:
+          - content_completion_rate
+          - episode_completion_rate
+          - session_completion_rate
+        description: Fraction of viewing sessions that were completed (completed_episode or finish_episode reason).
+        expr: WATCH_COMPLETION_RATE
+        data_type: NUMBER(19,6)
+        access_modifier: public_access
+        sample_values:
+          - '0.75'
+          - '0.68'
+          - '0.82'
+      - name: WATCH_SESSION_AVG_DURATION
+        synonyms:
+          - average_session_duration
+          - avg_watch_session_length
+          - mean_session_duration
+        description: Average duration per viewing session in seconds (lifetime).
+        expr: WATCH_SESSION_AVG_DURATION
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '278'
+          - '273'
+          - '227'
+      - name: WATCH_SESSION_COUNT
+        synonyms:
+          - cumulative_sessions
+          - total_viewing_sessions
+          - total_watch_sessions
+        description: Total number of viewing sessions (lifetime).
+        expr: WATCH_SESSION_COUNT
+        data_type: NUMBER(13,0)
+        access_modifier: public_access
+        sample_values:
+          - '45'
+          - '32'
+          - '67'
+      - name: WATCH_TIME_180
+        synonyms:
+          - half_year_watch_time
+          - six_month_watch_time
+          - watch_time_180d
+        description: Watch time in seconds over the last 180 days (rolling window).
+        expr: WATCH_TIME_180
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '32400'
+          - '21600'
+          - '43200'
+      - name: WATCH_TIME_30
+        synonyms:
+          - recent_watch_time
+          - thirty_day_watch_time
+          - watch_time_30d
+        description: Watch time in seconds over the last 30 days (rolling window).
+        expr: WATCH_TIME_30
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '5400'
+          - '3600'
+          - '7200'
+      - name: WATCH_TIME_90
+        synonyms:
+          - ninety_day_watch_time
+          - quarterly_watch_time
+          - watch_time_90d
+        description: Watch time in seconds over the last 90 days (rolling window).
+        expr: WATCH_TIME_90
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '16200'
+          - '10800'
+          - '21600'
+      - name: WATCH_TIME_TOTAL
+        synonyms:
+          - cumulative_watch_time
+          - lifetime_watch_time
+          - total_viewing_time
+          - total_watch_duration
+        description: Total watch time in seconds across all viewing sessions (lifetime).
+        expr: WATCH_TIME_TOTAL
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '12540'
+          - '8760'
+          - '15230'
+      - name: WATCH_TIME_WEEKLY_AVG
+        synonyms:
+          - average_weekly_watch_time
+          - avg_watch_time_per_week
+          - weekly_average_viewing_time
+        description: Average watch time per week in seconds (calculated as total watch time divided by number of active weeks).
+        expr: WATCH_TIME_WEEKLY_AVG
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1254'
+          - '876'
+          - '1523'
+    primary_key:
+      columns:
+        - UNIQUE_ID
+  - name: FE_SUBSCRIBER_LTV_SCORES
+    synonyms:
+      - Customer Value Scores
+      - LTV Predictions
+      - Predicted Customer Lifetime Value
+      - Predicted LTV Scores
+      - Subscriber Lifetime Value Scores
+      - Subscriber Value Score
+    description: This table stores predicted Lifetime Value (LTV) scores for subscribers, including the target LTV, predicted LTV, residual (difference between target and predicted LTV), and timestamp when the prediction was generated, to support diagnostics and analysis of subscriber value.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: ANALYSE
+      table: FE_SUBSCRIBER_LTV_SCORES
+    dimensions:
+      - name: UNIQUE_ID
+        synonyms:
+          - account_identifier
+          - customer_unique_id
+          - subscriber_unique_id
+        description: Unique identifier for a subscriber, used to track and analyze their lifetime value scores.
+        expr: UNIQUE_ID
+        data_type: VARCHAR(36)
+        sample_values:
+          - dcb34774-82cc-403a-8d84-06388bbb7e09
+          - 7454a296-dc30-4d07-bf34-ece3b3fc1a32
+          - f373b851-c055-4e12-9b54-cc7e19fbae38
+    facts:
+      - name: LTV_TARGET
+        synonyms:
+          - actual_ltv
+          - observed_ltv
+          - target_ltv
+        description: Synthetic LTV target value used as ground truth for model training, calculated from subscription value (tier * months active), ad monetization (180-day), engagement signals (watch time, sessions), and retention premium (MAV count). This is the actual target value used to train the model, not a prediction.
+        expr: LTV_TARGET
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '1.0134596'
+          - '14.4704709'
+          - '15.8957799'
+      - name: PREDICTED_LTV
+        synonyms:
+          - estimated_ltv
+          - ltv_prediction
+          - modelled_ltv
+        description: Predicted LTV value from the current linear regression model.
+        expr: PREDICTED_LTV
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '0.001491583486'
+          - '0.003246431134'
+          - '-0.0008616729692'
+    primary_key:
+      columns:
+        - UNIQUE_ID
+  - name: SUBSCRIBER_PROFILE_ENRICHED
+    synonyms:
+      - conformed_subscriber_profile
+      - enriched_subscriber_reference
+      - subscriber_dimension
+      - subscriber_master_profile
+    description: Subscriber dimension combining identity attributes with demographic insight. Built from ingest identity feeds joined to shared demographic profiles via normalized email. Used as the conformed subscriber reference for harmonized, analyse and activation layers.
+    base_table:
+      database: AME_AD_SALES_DEMO
+      schema: HARMONIZED
+      table: SUBSCRIBER_PROFILE_ENRICHED
+    dimensions:
+      - name: AGE_BAND
+        synonyms:
+          - age_category
+          - age_segment
+          - life_stage_band
+        description: Life-stage label mapped from age distributions (e.g., Prime Settling/Family Formation, Retirement/Senior Years).
+        expr: AGE_BAND
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - ESTABLISHED_CAREER_MIDDLE_AGE
+          - PRE-RETIREMENT_EMPTY_NESTERS
+          - RETIREMENT_SENIOR_YEARS
+      - name: AREA_NAME
+        synonyms:
+          - lad_area_label
+          - locality_name
+          - region_area
+        description: Sample area name within the LAD chosen during demographic enrichment to provide localized storytelling.
+        expr: AREA_NAME
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Great Baddow
+          - Haywards Heath
+          - Dalston
+      - name: EDUCATION_LEVEL
+        synonyms:
+          - academic_level
+          - education_attainment
+          - schooling_level
+        description: Most-likely education attainment inferred from LAD-specific demographic distributions.
+        expr: EDUCATION_LEVEL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Post Grad
+          - Some College
+          - Graduate
+      - name: FAMILY_STATUS
+        synonyms:
+          - family_composition
+          - household_status
+          - household_type
+        description: Household composition indicator (e.g., No Kids, Young Family) derived from LAD distributions.
+        expr: FAMILY_STATUS
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Single Person Household
+          - Single Parent - Dependent Children
+          - Couple - Dependent Children
+      - name: INCOME_LEVEL
+        synonyms:
+          - economic_tier
+          - household_income_band
+          - income_segment
+        description: Income band estimated from LAD demographics, used for regional ad rate modelling.
+        expr: INCOME_LEVEL
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Mid
+          - High
+          - Upper Mid
+      - name: LAD_CODE
+        synonyms:
+          - geography_code
+          - lad_identifier
+          - regional_code
+        description: Assigned Local Authority District code representing the subscriber’s simulated home region (derived from LAD correlation distributions).
+        expr: LAD_CODE
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - E09000026
+          - E06000010
+          - E07000214
+      - name: MARITAL_STATUS
+        synonyms:
+          - civil_status
+          - marital_state
+          - relationship_status
+        description: Marital status category sampled from LAD probability weights (e.g., Single, Married, Widowed).
+        expr: MARITAL_STATUS
+        data_type: VARCHAR(16777216)
+        sample_values:
+          - Single - Never Married
+          - Widowed
+          - Married / Civil Partnership
+      - name: TIER
+        synonyms:
+          - plan_type
+          - service_level
+          - subscription_tier
+        description: Current subscription tier (Ad-supported, Standard, Premium) inherited from the generating distributions.
+        expr: TIER
+        data_type: VARCHAR(12)
+        sample_values:
+          - Ad-supported
+          - Premium
+          - Standard
+      - name: UNIQUE_ID
+        synonyms:
+          - account_identifier
+          - customer_unique_id
+          - subscriber_unique_id
+        description: Deterministic subscriber identifier generated in the GENERATE layer and persisted through INGEST; primary key for joining to behavioural and ad delivery facts.
+        expr: UNIQUE_ID
+        data_type: VARCHAR(36)
+        sample_values:
+          - d5c13913-7da0-424c-871c-8f31e0297062
+          - 23d49993-41a3-4550-9ba1-f7a8a1c617c9
+          - adb019b8-682d-4c9f-bf7c-3a844ad351c5
+    facts:
+      - name: AGE
+        synonyms:
+          - age_value
+          - customer_age
+          - subscriber_age
+        description: Generated integer age selected by the LAD demographic profile UDF based on LAD age distributions.
+        expr: AGE
+        data_type: NUMBER(38,0)
+        access_modifier: public_access
+        sample_values:
+          - '12'
+          - '7'
+          - '54'
+      - name: LATITUDE
+        synonyms:
+          - geographic_latitude
+          - lat_value
+          - latitude_coordinate
+        description: Latitude coordinate for the selected LAD sample area, with slight noise injected to avoid clustering.
+        expr: LATITUDE
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '51.773311'
+          - '51.446425'
+          - '52.062096'
+      - name: LONGITUDE
+        synonyms:
+          - geographic_longitude
+          - lon_value
+          - longitude_coordinate
+        description: Longitude coordinate for the selected LAD sample area, with slight noise injected to avoid clustering.
+        expr: LONGITUDE
+        data_type: FLOAT
+        access_modifier: public_access
+        sample_values:
+          - '-3.563445'
+          - '-1.77773'
+          - '-1.207953'
+    primary_key:
+      columns:
+        - UNIQUE_ID
+relationships:
+  - name: LTV_subscriber
+    left_table: FE_SUBSCRIBER_LTV_SCORES
+    relationship_columns:
+      - left_column: UNIQUE_ID
+        right_column: UNIQUE_ID
+    right_table: SUBSCRIBER_PROFILE_ENRICHED
+  - name: Churn_subscriber
+    left_table: FE_SUBSCRIBER_CHURN_RISK
+    relationship_columns:
+      - left_column: UNIQUE_ID
+        right_column: UNIQUE_ID
+    right_table: SUBSCRIBER_PROFILE_ENRICHED
+verified_queries:
+  - name: What content category has the highest CTR?
+    question: What content category has the highest CTR?
+    sql: |-
+      SELECT
+        content_category,
+        MIN(report_date) AS start_date,
+        MAX(report_date) AS end_date,
+        SUM(clicks) / NULLIF(SUM(impressions), 0) AS overall_ctr
+      FROM
+        ad_performance_daily_agg
+      GROUP BY
+        content_category
+      ORDER BY
+        overall_ctr DESC NULLS LAST
+      LIMIT
+        1
+    use_as_onboarding_question: true
+    verified_by: Fredrik Göransson
+    verified_at: 1762855631
+  - name: Which content category has the highest click-through rate across all campaigns?
+    question: Which content category has the highest click-through rate across all campaigns?
+    sql: |-
+      WITH __ad_performance_daily_agg AS (
+        SELECT
+          ad_performance_daily_agg.content_category AS content_category,
+          ad_performance_daily_agg.report_date AS report_date,
+          ad_performance_daily_agg.clicks AS clicks,
+          ad_performance_daily_agg.impressions AS impressions
+        FROM
+          __ad_performance_daily_agg AS ad_performance_daily_agg
+      )
+      SELECT
+        __ad_performance_daily_agg.content_category AS content_category,
+        MIN(__ad_performance_daily_agg.report_date) AS start_date,
+        MAX(__ad_performance_daily_agg.report_date) AS end_date,
+        SUM(__ad_performance_daily_agg.clicks) / NULLIF(SUM(__ad_performance_daily_agg.impressions), 0) AS overall_ctr
+      FROM
+        __ad_performance_daily_agg AS __ad_performance_daily_agg
+      GROUP BY
+        __ad_performance_daily_agg.content_category
+      ORDER BY
+        overall_ctr DESC NULLS LAST
+      LIMIT
+        1
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762855648
+  - name: Which industry vertical has the highest average booked CPM rates across all campaigns?
+    question: Which industry vertical has the highest average booked CPM rates across all campaigns?
+    sql: |-
+      WITH __ad_performance AS (
+        SELECT
+          ad_performance.vertical AS vertical,
+          ad_performance.report_month AS report_month,
+          ad_performance.booked_cpm AS booked_cpm
+        FROM
+          __ad_performance AS ad_performance
+      )
+      SELECT
+        __ad_performance.vertical AS vertical,
+        MIN(__ad_performance.report_month) AS start_date,
+        MAX(__ad_performance.report_month) AS end_date,
+        AVG(__ad_performance.booked_cpm) AS avg_cpm
+      FROM
+        __ad_performance AS __ad_performance
+      GROUP BY
+        __ad_performance.vertical
+      ORDER BY
+        avg_cpm DESC NULLS LAST
+      LIMIT
+        1
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762855686
+  - name: What was the total advertising spend for education campaigns last month?
+    question: What was the total advertising spend for education campaigns last 12 months?
+    sql: |-
+      WITH __ad_performance AS (
+        SELECT
+          ad_performance.vertical AS vertical,
+          ad_performance.report_month AS report_month,
+          ad_performance.spend AS spend
+        FROM
+          __ad_performance AS ad_performance
+      )
+      SELECT
+        SUM(__ad_performance.spend) AS total_spend
+      FROM
+        __ad_performance AS __ad_performance
+      WHERE
+        __ad_performance.report_month < DATE_TRUNC('MONTH', CURRENT_DATE)
+        AND __ad_performance.report_month >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '12 MONTH')
+        AND __ad_performance.vertical = 'Education'
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762855809
+  - name: Which content categories have generated the highest advertising spend over the last two months?
+    question: Which content categories have generated the highest advertising spend over the last two months?
+    sql: |-
+      WITH __ad_performance_daily_agg AS (
+        SELECT
+          ad_performance_daily_agg.content_category AS content_category,
+          ad_performance_daily_agg.report_date AS report_date,
+          ad_performance_daily_agg.spend AS spend
+        FROM
+          __ad_performance_daily_agg AS ad_performance_daily_agg
+      )
+      SELECT
+        __ad_performance_daily_agg.content_category AS content_category,
+        SUM(__ad_performance_daily_agg.spend) AS total_spend
+      FROM
+        __ad_performance_daily_agg AS __ad_performance_daily_agg
+      WHERE
+        __ad_performance_daily_agg.report_date >= DATE_TRUNC('MONTH', DATEADD(MONTH, -2, CURRENT_DATE))
+      GROUP BY
+        __ad_performance_daily_agg.content_category
+      ORDER BY
+        total_spend DESC NULLS LAST
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762855889
+  - name: Show me all subscribers who have at least 10 monthly logins (which would be approximately 2.3 logins per week or more), including their unique ID, login frequency per week, and other relevant behavioral metrics
+    question: Show me all subscribers who have at least 10 monthly logins (which would be approximately 2.3 logins per week or more), including their unique ID, login frequency per week, and other relevant behavioral metrics
+    sql: |-
+      SELECT
+        sf.unique_id,
+        sf.login_frequency_per_week,
+        sf.login_frequency_per_week * 4.33 AS estimated_monthly_logins,
+        sf.avg_site_visits_per_month,
+        sf.clickstream_active_days,
+        sf.clickstream_events,
+        sf.days_since_clickstream,
+        sf.days_since_behaviour,
+        sf.behavioural_last_event_ts,
+        sf.clickstream_last_event_ts
+      FROM
+        fe_subscriber_features AS sf
+      WHERE
+        sf.login_frequency_per_week >= 2.3
+        AND sf.behavioural_last_event_ts <= CURRENT_DATE
+      ORDER BY
+        sf.login_frequency_per_week DESC NULLS LAST
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762942651
+  - name: count of subscribers by tier or plan type
+    question: count of subscribers by tier or plan type
+    sql: |-
+      SELECT
+        tier,
+        COUNT(unique_id) AS subscriber_count,
+        COUNT(DISTINCT lad_code) AS unique_regions
+      FROM
+        subscriber_profile_enriched
+      GROUP BY
+        tier
+      ORDER BY
+        subscriber_count DESC NULLS LAST
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762942839
+  - name: What is the distribution of subscriber tiers across content categories?
+    question: What is the distribution of subscriber tiers across content categories?
+    sql: |-
+      WITH subscriber_content AS (
+        SELECT
+          spe.unique_id,
+          spe.tier,
+          abf.persona,
+          abf.content_categories
+        FROM
+          subscriber_profile_enriched AS spe
+          INNER JOIN aggregated_behavioral_logs AS abf ON spe.unique_id = abf.unique_id
+        WHERE
+          NOT abf.content_categories IS NULL
+      ),
+      flattened_content AS (
+        SELECT
+          sc.unique_id,
+          sc.tier,
+          TRIM(category.value) AS content_category
+        FROM
+          subscriber_content AS sc,
+          LATERAL FLATTEN(input => sc.content_categories) AS category(SEQ, KEY, PATH, INDEX, VALUE, THIS)
+      ),
+      tier_content_counts AS (
+        SELECT
+          tier,
+          content_category,
+          COUNT(DISTINCT unique_id) AS subscriber_count
+        FROM
+          flattened_content
+        GROUP BY
+          tier,
+          content_category
+      ),
+      total_by_content AS (
+        SELECT
+          content_category,
+          SUM(subscriber_count) AS total_subscribers
+        FROM
+          tier_content_counts
+        GROUP BY
+          content_category
+      )
+      SELECT
+        tcc.tier,
+        tcc.content_category,
+        tcc.subscriber_count,
+        tbc.total_subscribers,
+        ROUND(
+          (tcc.subscriber_count * 100.0) / NULLIF(NULLIF(tbc.total_subscribers, 0), 0),
+          2
+        ) AS percentage
+      FROM
+        tier_content_counts AS tcc
+        INNER JOIN total_by_content AS tbc ON tcc.content_category = tbc.content_category
+      WHERE NOT STARTSWITH(tcc.content_category, '/') -- Exclude path searches
+      ORDER BY
+        tcc.content_category,
+        tcc.subscriber_count DESC NULLS LAST
+    use_as_onboarding_question: true
+    verified_by: Fredrik Göransson
+    verified_at: 1762944060
+  - name: What was the CTR last month?
+    question: What was the CTR last month?
+    sql: |-
+      SELECT
+        SUM(clicks) / NULLIF(NULLIF(SUM(impressions), 0), 0) AS overall_ctr
+      FROM
+        ad_performance_daily_agg
+      WHERE
+        report_date >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+        AND report_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+    use_as_onboarding_question: true
+    verified_by: Fredrik Göransson
+    verified_at: 1762947565
+  - name: What are the available income levels and how many subscribers are in each income level, particularly focusing on high income segments
+    question: What are the available income levels and how many subscribers are in each income level, particularly focusing on high income segments
+    sql: |-
+      SELECT
+        spe.income_level,
+        COUNT(spe.unique_id) AS subscriber_count,
+        COUNT(DISTINCT spe.lad_code) AS unique_regions,
+        MIN(abf.last_event_ts) AS earliest_activity,
+        MAX(abf.last_event_ts) AS latest_activity
+      FROM
+        subscriber_profile_enriched AS spe
+        LEFT JOIN aggregated_behavioral_logs AS abf ON spe.unique_id = abf.unique_id
+      WHERE
+        abf.last_event_ts <= CURRENT_DATE
+        OR abf.last_event_ts IS NULL
+      GROUP BY
+        spe.income_level
+      ORDER BY
+        CASE
+          WHEN spe.income_level = 'High' THEN 1
+          WHEN spe.income_level = 'Upper Mid' THEN 2
+          WHEN spe.income_level = 'Mid' THEN 3
+          ELSE 4
+        END,
+        subscriber_count DESC NULLS LAST
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762947577
+  - name: count of active vs inactive subscribers in the last 3 months based on behavioral activity, clickstream activity, or ad engagement within 90 days
+    question: count of active vs inactive subscribers in the last 3 months based on behavioral activity, clickstream activity, or ad engagement within 90 days
+    sql: |-
+      WITH subscriber_activity AS (
+        SELECT
+          spe.unique_id,
+          CASE
+            WHEN (
+              sf.days_since_behaviour <= 90
+              OR sf.days_since_clickstream <= 90
+              OR sf.days_since_ad_engagement <= 90
+            ) THEN 'Active'
+            ELSE 'Inactive'
+          END AS activity_status,
+          sf.days_since_behaviour,
+          sf.days_since_clickstream,
+          sf.days_since_ad_engagement
+        FROM
+          subscriber_profile_enriched AS spe
+          LEFT JOIN fe_subscriber_features AS sf ON spe.unique_id = sf.unique_id
+        WHERE
+          sf.behavioural_last_event_ts <= CURRENT_DATE
+          AND sf.clickstream_last_event_ts <= CURRENT_DATE
+          AND (
+            sf.last_ad_event_ts <= CURRENT_DATE
+            OR sf.last_ad_event_ts IS NULL
+          )
+      )
+      SELECT
+        activity_status,
+        COUNT(*) AS subscriber_count,
+        MIN(days_since_behaviour) AS min_days_since_behaviour,
+        MAX(days_since_behaviour) AS max_days_since_behaviour,
+        MIN(days_since_clickstream) AS min_days_since_clickstream,
+        MAX(days_since_clickstream) AS max_days_since_clickstream
+      FROM
+        subscriber_activity
+      GROUP BY
+        activity_status
+      ORDER BY
+        activity_status
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762947593
+  - name: What content categories are trending?
+    question: What content categories are trending?
+    sql: |-
+      SELECT
+        content_category,
+        SUM(total_watch_time_seconds) AS total_watch_time,
+        COUNT(DISTINCT view_date) AS active_days,
+        AVG(unique_viewers) AS avg_daily_viewers
+      FROM
+        fe_content_views_daily
+      WHERE
+        view_date >= DATEADD(DAY, -30, CURRENT_DATE)
+      GROUP BY
+        content_category
+      ORDER BY
+        total_watch_time DESC NULLS LAST
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762947604
+  - name: What is the CTR across the last month?
+    question: What is the CTR across the last month?
+    sql: |-
+      SELECT
+        SUM(clicks) / NULLIF(NULLIF(SUM(impressions), 0), 0) AS overall_ctr
+      FROM
+        ad_performance_daily_agg
+      WHERE
+        report_date >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+        AND report_date < DATE_TRUNC('MONTH', CURRENT_DATE)
+    use_as_onboarding_question: true
+    verified_by: Fredrik Göransson
+    verified_at: 1762949005
+  - name: What content catagory has viewers with the hightes LTV?
+    question: What content category has viewers with the highest LTV?
+    sql: |-
+      WITH subscriber_content AS (
+        SELECT
+          spe.unique_id,
+          spe.tier,
+          abf.persona,
+          abf.content_categories
+        FROM
+          subscriber_profile_enriched AS spe
+          INNER JOIN aggregated_behavioral_logs AS abf ON spe.unique_id = abf.unique_id
+        WHERE
+          NOT abf.content_categories IS NULL
+      ),
+      flattened_content AS (
+        SELECT
+          sc.unique_id,
+          sc.tier,
+          TRIM(category.value) AS content_category
+        FROM
+          subscriber_content AS sc,
+          LATERAL FLATTEN(input => sc.content_categories) AS category(SEQ, KEY, PATH, INDEX, VALUE, THIS)
+      ),
+      subscriber_ltv_content AS (
+        SELECT
+          fc.content_category,
+          fc.unique_id,
+          ltv.predicted_ltv
+        FROM
+          flattened_content AS fc
+          INNER JOIN fe_subscriber_ltv_scores AS ltv ON fc.unique_id = ltv.unique_id
+        WHERE
+          NOT STARTSWITH(fc.content_category, '/')
+      )
+      SELECT
+        content_category,
+        AVG(predicted_ltv) AS avg_ltv,
+        COUNT(DISTINCT unique_id) AS subscriber_count
+      FROM
+        subscriber_ltv_content
+      GROUP BY
+        content_category
+      ORDER BY
+        avg_ltv DESC NULLS LAST
+      LIMIT
+        1
+    use_as_onboarding_question: false
+    verified_by: Fredrik Göransson
+    verified_at: 1762960090
