@@ -2359,6 +2359,12 @@ relationships:
       - left_column: UNIQUE_ID
         right_column: UNIQUE_ID
     right_table: SUBSCRIBER_PROFILE_ENRICHED
+  - name: AdPerformance_DailyAgg
+    left_table: AD_PERFORMANCE
+    relationship_columns:
+      - left_column: CAMPAIGN_ID
+        right_column: CAMPAIGN_ID
+    right_table: AD_PERFORMANCE_DAILY_AGG
 verified_queries:
   - name: What content category has the highest CTR?
     question: What content category has the highest CTR?

@@ -3528,7 +3528,7 @@ RETURNS VARCHAR
 LANGUAGE SQL
 EXECUTE AS CALLER
 AS
-$$
+'
 DECLARE
     content_max_date DATE;
     ad_max_date DATE;
@@ -3540,11 +3540,11 @@ BEGIN
     content_max_date := (SELECT MAX(VIEW_DATE)::DATE FROM AME_AD_SALES_DEMO.ANALYSE.FE_CONTENT_VIEWS_DAILY);
     ad_max_date := (SELECT MAX(REPORT_DATE) FROM AME_AD_SALES_DEMO.HARMONIZED.AD_PERFORMANCE_DAILY_AGG);
 
-    days_to_fill_content := DATEDIFF('day', :content_max_date, CURRENT_DATE());
-    days_to_fill_ad := DATEDIFF('day', :ad_max_date, CURRENT_DATE());
+    days_to_fill_content := DATEDIFF(''day'', :content_max_date, CURRENT_DATE());
+    days_to_fill_ad := DATEDIFF(''day'', :ad_max_date, CURRENT_DATE());
 
     IF (days_to_fill_content <= 0 AND days_to_fill_ad <= 0) THEN
-        RETURN 'No gap to fill. Content data through ' || :content_max_date || ', Ad data through ' || :ad_max_date;
+        RETURN ''No gap to fill. Content data through '' || :content_max_date || '', Ad data through '' || :ad_max_date;
     END IF;
 
     -- =========================================================================
@@ -3557,7 +3557,7 @@ BEGIN
             WHERE VIEW_DATE::DATE = (SELECT MAX(VIEW_DATE)::DATE FROM AME_AD_SALES_DEMO.ANALYSE.FE_CONTENT_VIEWS_DAILY)
         ),
         date_series AS (
-            SELECT DATEADD('day', ROW_NUMBER() OVER (ORDER BY SEQ4()), :content_max_date) AS gen_date
+            SELECT DATEADD(''day'', ROW_NUMBER() OVER (ORDER BY SEQ4()), :content_max_date) AS gen_date
             FROM TABLE(GENERATOR(ROWCOUNT => :days_to_fill_content))
         ),
         noised AS (
@@ -3616,29 +3616,29 @@ BEGIN
     IF (days_to_fill_ad > 0) THEN
         INSERT INTO AME_AD_SALES_DEMO.HARMONIZED.AD_PERFORMANCE_DAILY_AGG
         WITH campaigns AS (
-            SELECT 'AD_0106' AS CAMPAIGN_ID, 'Northwind Insurance' AS ADVERTISER_NAME, 'Finance' AS VERTICAL,
-                   'Family Entertainment' AS CONTENT_CATEGORY, 'CPM' AS RATE_TYPE,
+            SELECT ''AD_0106'' AS CAMPAIGN_ID, ''Northwind Insurance'' AS ADVERTISER_NAME, ''Finance'' AS VERTICAL,
+                   ''Family Entertainment'' AS CONTENT_CATEGORY, ''CPM'' AS RATE_TYPE,
                    580 AS BASE_IMPRESSIONS, 6 AS BASE_CLICKS, 17.41 AS BOOKED_CPM, 0.0106 AS BOOKED_CTR,
                    621 AS DAILY_CAP, 4 AS CREATIVE_COUNT,
-                   ARRAY_CONSTRUCT('PREMIUM_DRAMA','FAMILY_HOUSEHOLD','SPORTS_ENGAGED','LIFESTYLE_MINDED','REALITY_FAN','KNOWLEDGE_SEEKER') AS TARGET_PERSONAS,
-                   ARRAY_CONSTRUCT('Tablet','Smart TV') AS TARGET_DEVICES
+                   ARRAY_CONSTRUCT(''PREMIUM_DRAMA'',''FAMILY_HOUSEHOLD'',''SPORTS_ENGAGED'',''LIFESTYLE_MINDED'',''REALITY_FAN'',''KNOWLEDGE_SEEKER'') AS TARGET_PERSONAS,
+                   ARRAY_CONSTRUCT(''Tablet'',''Smart TV'') AS TARGET_DEVICES
             UNION ALL
-            SELECT 'AD_0200', 'Glow Cosmetics', 'Beauty',
-                   'Sports Enthusiasts', 'CPM',
+            SELECT ''AD_0200'', ''Glow Cosmetics'', ''Beauty'',
+                   ''Sports Enthusiasts'', ''CPM'',
                    1350, 17, 12.00, 0.0125,
                    1353, 3,
-                   ARRAY_CONSTRUCT('LIFESTYLE_MINDED','SPORTS_ENGAGED','REALITY_FAN'),
-                   ARRAY_CONSTRUCT('Mobile','Smart TV','Web')
+                   ARRAY_CONSTRUCT(''LIFESTYLE_MINDED'',''SPORTS_ENGAGED'',''REALITY_FAN''),
+                   ARRAY_CONSTRUCT(''Mobile'',''Smart TV'',''Web'')
             UNION ALL
-            SELECT 'AD_0201', 'Falcon Motors', 'Auto',
-                   'Premium Drama', 'Hybrid',
+            SELECT ''AD_0201'', ''Falcon Motors'', ''Auto'',
+                   ''Premium Drama'', ''Hybrid'',
                    1100, 12, 17.41, 0.0106,
                    1112, 2,
-                   ARRAY_CONSTRUCT('PREMIUM_DRAMA','SPORTS_ENGAGED','KNOWLEDGE_SEEKER'),
-                   ARRAY_CONSTRUCT('Smart TV','Web')
+                   ARRAY_CONSTRUCT(''PREMIUM_DRAMA'',''SPORTS_ENGAGED'',''KNOWLEDGE_SEEKER''),
+                   ARRAY_CONSTRUCT(''Smart TV'',''Web'')
         ),
         date_series AS (
-            SELECT DATEADD('day', ROW_NUMBER() OVER (ORDER BY SEQ4()), :ad_max_date) AS gen_date
+            SELECT DATEADD(''day'', ROW_NUMBER() OVER (ORDER BY SEQ4()), :ad_max_date) AS gen_date
             FROM TABLE(GENERATOR(ROWCOUNT => :days_to_fill_ad))
         )
         SELECT
@@ -3668,12 +3668,13 @@ BEGIN
         ad_rows_inserted := (days_to_fill_ad * 3);
     END IF;
 
-    RETURN 'Generated ' || :content_rows_inserted || ' content view rows and ' || :ad_rows_inserted || ' ad performance rows through ' || CURRENT_DATE();
+    RETURN ''Generated '' || :content_rows_inserted || '' content view rows and '' || :ad_rows_inserted || '' ad performance rows through '' || CURRENT_DATE();
 END;
-$$;
+';
 
 -- Serverless task: runs daily at 6am UTC to keep data fresh for Snowflake Intelligence
 -- Auto-suspends after 3 consecutive failures. Near-zero cost (no-op when no gap exists).
+USE ROLE ACCOUNTADMIN;
 GRANT EXECUTE MANAGED TASK ON ACCOUNT TO ROLE AME_AD_SALES_DEMO_ADMIN;
 
 USE ROLE AME_AD_SALES_DEMO_ADMIN;
